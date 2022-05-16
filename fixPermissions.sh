@@ -2,9 +2,10 @@
 # With this script you can copy 
 # the files'/dirs' permissions
 # from a source path to a destination path
+# notes: all args ${@}, num of args ${#}
 
 usage() {
-    echo "Usage: $0 [-h] [-t] [-r] source_abs_path dest_abs_path"
+    echo -e "Usage: $0 [-h] [-t] [-r] source_abs_path dest_abs_path\n"
 }
 
 help() {
@@ -19,79 +20,58 @@ help() {
     echo "-r RUN"
 }
 
-check_args() {
-    if [ $# -ne 2 ] ; then
-        usage
-    elif [[ -z $1 || -z $2 ]]; then
-        usage
-    fi
-}
-
-main() {
-    check_args
-
-    # source_path=$1
-    # dest_path=$2
-    # current_path=`pwd`
-    # echo "Current path: $currnet_path \n"
-
-    # echo "Source Permissions"
-    # tree -p $source_path
-
-    # touch $current_path/temp_acl
-
-    # cd $source_path
-    # getfacl -R . | tee $current_path/temp_acl
-
-    # cd $dest_path
-}
-
-rmtemp() {
-    rm -f $current_path/temp_acl
-}
-
-dry() {
-    echo "DRY"
-
-    main
-    
-    setfacl -t --restore=$current_path/temp_acl
-
-    rmtemp
-    
-}
-
-run() {
-    echo "RUN"
-    
-    main
-
-    setfacl --restore=$current_path/temp_acl
-
-    rmtemp
-
-    echo "Destination Permissions"
-    tree -p $dest_path
-}
-
 while getopts ":htr" option; do
    case $option in
-    h ) # display Help
+    h) # display Help
         help
         ;;
-    t ) # dry run
+    t) # dry run
         dry
         ;; 
-    r ) #run
+    r) #run
+            source_path=$2
+        dest_path=$3
         run
         ;;
-    * ) # display usage
-        echo "Illegal options \n"
+    *) # display usage
+        echo -e "\nIllegal options  -${OPTARG}\n"
         usage
         exit 1
         ;;
    esac
 done
 
-shift $((OPTIND -1))
+if [[ ${#} -eq 0 ]] || [[ ${#} -ne 3 ]]; then
+   usage
+else
+    flag=$1
+    source_path=$2
+    dest_path=$3
 
+    echo -e "Source path is $source_path \n"
+    echo -e "Destination path is $dest_path \n"
+
+    current_path=`pwd`
+    echo -e "Current path: $current_path \n"
+
+    echo "Source Permissions"
+    tree -p $source_path
+
+    touch $current_path/temp_acl
+
+    cd $source_path
+    getfacl -R . | tee $current_path/temp_acl
+
+    cd $dest_path
+
+    if [[ $flag -eq "r" ]]; then
+        setfacl --restore=$current_path/temp_acl
+    elif [[ $flag -eq "t" ]]; then
+        setfacl -t --restore=$current_path/temp_acl
+    fi
+
+    echo "Destination Permissions"
+    tree -p $dest_path
+
+    rm -f $current_path/temp_acl
+fi
